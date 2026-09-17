@@ -1,10 +1,16 @@
+#include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
+typedef int bool;
+#define TRUE 1
+#define FALSE 0
+
 #define strequals !strcmp
-char *joins(char **words, size_t count) {
+char *join(char **words, size_t count) {
     size_t i, result_length = 0;
     char *p, *result;
 
@@ -26,11 +32,30 @@ char *joins(char **words, size_t count) {
     return result;
 }
 
+#define OCDE_INCORRECT_USAGE 1
+#define OCDE_FILE_DOES_NOT_EXIST 2
+int failure(int error, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    fputc('\n', stderr);
+    va_end(args);
+    return error;
+}
+
+#define OCDE_UNKNOWN_ERROR_OCCURRED -1
+int unknown_failure() {
+    return failure(
+        OCDE_UNKNOWN_ERROR_OCCURRED,
+        "An unknown error (%d) occurred!",
+        errno);
+}
+
 int main(int argc, char **argv) {
+    int i, files_count, command_argi = 0;
     char *command;
-    int i, command_argi = 0;
-    struct stat file_stat;
-    time_t last_changed_time = 0;
+    struct stat *stats;
+    bool is_first_run = TRUE;
     char buffer[128];
 
     /* - parse command line arguments. */
@@ -40,15 +65,50 @@ int main(int argc, char **argv) {
             break;
         }
     }
-    if (!command_argi || command_argi < 2 || argc < 4) {
-        fprintf(stderr, "USAGE: ocd path -do (command)\n");
-        return (1);
-    }
-    command = joins(argv + command_argi, argc - command_argi);
+    if (!command_argi || command_argi < 3 || argc < 4)
+        return failure(OCDE_INCORRECT_USAGE, "USAGE: ocd [files] -do (command)\n");
+    files_count = command_argi - 2;
+    command = join(argv + command_argi, argc - command_argi);
 
+    /* - ensure all passed files exist. */
+    stats = malloc(sizeof(*stats) * files_count);
+    for (i = 0; i < files_count; ++i) {
+        char *file = argv[i + 1];
+        int error = stat(file, &stats[i]);
+        if (error) {
+            if (errno == ENOENT)
+                return failure(OCDE_FILE_DOES_NOT_EXIST, "File %s doesn't exit!\n", file);
+            else return unknown_failure();
+        }
+    }
+
+    /* - watch all files for any kind of changes. */
+    while (1) {
+        for (i = 0; i < files_count; ++i) {
+            char *file = argv[i + 1];
+            struct stat file_stat;
+            int error = stat(file, &file_stat);
+            if (error && errno != ENOENT) return unknown_failure();
+            if (stats[i].st_mtime < file_stat.st_mtime || is_first_run) {
+                FILE *pipe = popen(command, "r");
+                system("clear");
+                is_first_run = FALSE;
+                while (fgets(buffer, sizeof(buffer), pipe)) {
+                    printf("%s", buffer);
+                }
+            }
+            stats[i] = file_stat;
+        }
+    }
+
+    return 0;
+
+#if 0
     /* - watch for any changes in the contents of `path` */
     while (1) {
-        if (!stat(argv[1], &file_stat)) {
+        
+
+        /* if (!stat(argv[1], &file_stat)) {
             if (file_stat.st_mtime > last_changed_time) {
                 FILE *pipe = popen(command, "r");
                 system("clear");
@@ -57,7 +117,7 @@ int main(int argc, char **argv) {
                 }
             }
             last_changed_time = file_stat.st_mtime;
-        }
+        } */
     }
-    return (0);
+#endif
 }
