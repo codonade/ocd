@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
         }
     }
     if (!command_argi || command_argi < 3 || argc < 4)
-        return failure(OCDE_INCORRECT_USAGE, "USAGE: ocd [paths] -do (command)\n");
+        return failure(OCDE_INCORRECT_USAGE, "USAGE: ocd [paths] -do (command)");
     files_count = command_argi - 2;
     command = join(argv + command_argi, argc - command_argi);
 
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
         int error = stat(file, &stats[i]);
         if (error) {
             if (errno == ENOENT)
-                return failure(OCDE_FILE_DOES_NOT_EXIST, "File %s doesn't exit!\n", file);
+                return failure(OCDE_FILE_DOES_NOT_EXIST, "File %s doesn't exit!", file);
             else return unknown_failure();
         }
     }
