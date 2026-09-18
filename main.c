@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
         }
     }
     if (!command_argi || command_argi < 3 || argc < 4)
-        return failure(OCDE_INCORRECT_USAGE, "USAGE: ocd [files] -do (command)\n");
+        return failure(OCDE_INCORRECT_USAGE, "USAGE: ocd [paths] -do (command)\n");
     files_count = command_argi - 2;
     command = join(argv + command_argi, argc - command_argi);
 
@@ -102,22 +102,4 @@ int main(int argc, char **argv) {
     }
 
     return 0;
-
-#if 0
-    /* - watch for any changes in the contents of `path` */
-    while (1) {
-        
-
-        /* if (!stat(argv[1], &file_stat)) {
-            if (file_stat.st_mtime > last_changed_time) {
-                FILE *pipe = popen(command, "r");
-                system("clear");
-                while (fgets(buffer, sizeof(buffer), pipe)) {
-                    printf("%s", buffer);
-                }
-            }
-            last_changed_time = file_stat.st_mtime;
-        } */
-    }
-#endif
 }
