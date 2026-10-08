@@ -21,7 +21,7 @@ char *join_by_space(char **words, size_t count) {
     }
 
     /* - join all the words, separate them by a space. */
-    result = malloc(result_length);
+    result = malloc(result_length + 1);
     p = result;
     for (i = 0; i < count; ++i) {
         size_t length = strlen(words[i]);
@@ -29,6 +29,7 @@ char *join_by_space(char **words, size_t count) {
         p += length;
         if (i + 1 < count) *p++ = ' ';
     }
+    *p = '\0';
     return result;
 }
 
@@ -82,7 +83,7 @@ int main(int argc, char **args) {
         }
     }
 
-    /* - watch all files for any kind of changes. */
+    /* - watch all files for any kind of change. */
     while (1) {
         for (i = 0; i < files_count; ++i) {
             char *file = args[i + 1];
@@ -92,6 +93,7 @@ int main(int argc, char **args) {
             if (stats[i].st_mtime < file_stat.st_mtime || is_first_run) {
                 FILE *pipe = popen(command, "r");
                 system("clear");
+                printf("%s\n\n", command);
                 is_first_run = FALSE;
                 while (fgets(buffer, sizeof(buffer), pipe)) {
                     printf("%s", buffer);
